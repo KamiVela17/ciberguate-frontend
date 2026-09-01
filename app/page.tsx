@@ -1,6 +1,6 @@
 'use client';
 
-import { Activity, AlertTriangle, BarChart3, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, Download, LayoutDashboard, Menu, Plus, RefreshCw, Search, ShieldCheck, Sparkles, X } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, Boxes, BrainCircuit, ChevronRight, ClipboardCheck, Download, LayoutDashboard, LockKeyhole, LogOut, Menu, Plus, RefreshCw, Search, ShieldCheck, Sparkles, X } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 type View = 'dashboard' | 'assets' | 'risks' | 'recommendations';
@@ -8,6 +8,8 @@ type Asset = { id: number; name: string; asset_type: string; owner: string; loca
 type Risk = { id: number; title: string; threat: string; likelihood: number; impact: number; score: number; level: string; status: string; asset_id: number; asset_name?: string; nist_function: string };
 type Recommendation = { id: string; title: string; detail: string; priority: string; framework: string };
 type Dashboard = { total_assets: number; critical_assets: number; open_risks: number; critical_risks: number; average_risk_score: number; compliance_percentage: number; risks_by_level: Record<string, number> };
+type SessionUser = { email: string; display_name: string; role: string };
+type LoginResponse = { access_token: string; user: SessionUser };
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/v1';
 const demoAssets: Asset[] = [
@@ -37,12 +39,19 @@ const navItems = [
 const riskTone: Record<string, string> = { Crítico: 'bg-red-50 text-red-700 ring-red-200', Alto: 'bg-orange-50 text-orange-700 ring-orange-200', Medio: 'bg-amber-50 text-amber-700 ring-amber-200', Bajo: 'bg-emerald-50 text-emerald-700 ring-emerald-200' };
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...init?.headers } });
+  const token = typeof window === 'undefined' ? null : window.sessionStorage.getItem('ciberguate_token');
+  const response = await fetch(`${API_BASE}${path}`, { ...init, headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...init?.headers } });
   if (!response.ok) throw new Error(`API ${response.status}`);
   return response.json() as Promise<T>;
 }
 
 export default function Home() {
+  const [token, setToken] = useState<string | null>(() => typeof window === 'undefined' ? null : window.sessionStorage.getItem('ciberguate_token'));
+  const [sessionUser, setSessionUser] = useState<SessionUser | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const stored = window.sessionStorage.getItem('ciberguate_user');
+    return stored ? JSON.parse(stored) as SessionUser : null;
+  });
   const [view, setView] = useState<View>('dashboard');
   const [mobileMenu, setMobileMenu] = useState(false);
   const [assetModal, setAssetModal] = useState(false);
@@ -63,9 +72,25 @@ export default function Home() {
     } catch { setDemoMode(true); } finally { setLoading(false); }
   }, []);
   useEffect(() => {
+    if (!token) return;
     const timer = window.setTimeout(() => void loadData(), 0);
     return () => window.clearTimeout(timer);
-  }, [loadData]);
+  }, [loadData, token]);
+
+  async function login(email: string, password: string) {
+    const session = await request<LoginResponse>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+    window.sessionStorage.setItem('ciberguate_token', session.access_token);
+    window.sessionStorage.setItem('ciberguate_user', JSON.stringify(session.user));
+    setSessionUser(session.user);
+    setToken(session.access_token);
+  }
+
+  function logout() {
+    window.sessionStorage.removeItem('ciberguate_token');
+    window.sessionStorage.removeItem('ciberguate_user');
+    setToken(null);
+    setSessionUser(null);
+  }
 
   const filteredAssets = useMemo(() => assets.filter((a) => `${a.name} ${a.asset_type} ${a.owner}`.toLowerCase().includes(search.toLowerCase())), [assets, search]);
   const filteredRisks = useMemo(() => risks.filter((r) => `${r.title} ${r.threat} ${r.asset_name}`.toLowerCase().includes(search.toLowerCase())), [risks, search]);
@@ -83,17 +108,56 @@ export default function Home() {
     setRiskModal(false);
   }
 
+  if (!token) return <LoginView onLogin={login} />;
+
   return <div className="min-h-screen bg-slate-50 text-slate-950">
     <aside className={`fixed inset-y-0 left-0 z-40 w-72 border-r border-slate-800 bg-[#071526] text-white transition-transform lg:translate-x-0 ${mobileMenu ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="flex h-20 items-center gap-3 border-b border-white/10 px-6"><span className="grid h-11 w-11 place-items-center rounded-xl bg-cyan-400 text-[#071526]"><ShieldCheck size={26} /></span><div><p className="text-lg font-bold">CiberGuate IA</p><p className="text-xs text-slate-400">Gestión preventiva</p></div><button className="ml-auto lg:hidden" onClick={() => setMobileMenu(false)} aria-label="Cerrar menú"><X /></button></div>
       <nav className="px-4 py-6" aria-label="Navegación principal"><p className="mb-3 px-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Plataforma</p><div className="space-y-1.5">{navItems.map(({ id, label, icon: Icon }) => <button key={id} onClick={() => { setView(id); setMobileMenu(false); setSearch(''); }} className={`flex w-full items-center gap-3 rounded-xl px-3.5 py-3 text-left text-sm font-medium ${view === id ? 'bg-cyan-400 text-[#071526]' : 'text-slate-300 hover:bg-white/7 hover:text-white'}`}><Icon size={19} />{label}{view === id && <ChevronRight className="ml-auto" size={17} />}</button>)}</div>
         <div className="mt-8 rounded-2xl border border-white/10 bg-white/5 p-4"><div className="mb-3 flex items-center gap-2 text-sm font-semibold"><Activity className="text-cyan-300" size={18} />Postura de seguridad</div><div className="mb-2 flex justify-between text-xs text-slate-300"><span>Cumplimiento</span><span>{dashboard.compliance_percentage}%</span></div><div className="h-2 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-cyan-400" style={{ width: `${dashboard.compliance_percentage}%` }} /></div><p className="mt-3 text-xs leading-5 text-slate-400">Evaluación alineada con NIST CSF 2.0.</p></div>
-      </nav><div className="absolute inset-x-0 bottom-0 border-t border-white/10 p-5"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-full bg-slate-700 text-sm font-bold">MG</span><div><p className="text-sm font-semibold">Municipalidad Central</p><p className="text-xs text-slate-400">Plan Profesional</p></div></div></div>
+      </nav><div className="absolute inset-x-0 bottom-0 border-t border-white/10 p-5"><div className="flex items-center gap-3"><span className="grid h-10 w-10 place-items-center rounded-full bg-slate-700 text-sm font-bold">{sessionUser?.display_name.slice(0, 2).toUpperCase() ?? 'CG'}</span><div className="min-w-0"><p className="truncate text-sm font-semibold">{sessionUser?.display_name ?? 'CiberGuate'}</p><p className="truncate text-xs text-slate-400">{sessionUser?.email}</p></div><button onClick={logout} className="ml-auto rounded-lg p-2 text-slate-300 hover:bg-white/10 hover:text-white" aria-label="Cerrar sesión"><LogOut size={18} /></button></div></div>
     </aside>
     <main className="min-h-screen lg:pl-72"><header className="sticky top-0 z-30 flex h-20 items-center border-b border-slate-200 bg-white/95 px-5 backdrop-blur md:px-8"><button onClick={() => setMobileMenu(true)} className="mr-3 rounded-lg p-2 hover:bg-slate-100 lg:hidden" aria-label="Abrir menú"><Menu /></button><div><p className="text-xs font-medium text-slate-500">Centro de control</p><h1 className="text-lg font-bold md:text-xl">{navItems.find((item) => item.id === view)?.label}</h1></div><div className="ml-auto flex items-center gap-2">{demoMode && <span className="hidden rounded-full bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 ring-1 ring-amber-200 sm:inline-flex">Modo demostración</span>}<button onClick={() => void loadData()} disabled={loading} className="rounded-xl border border-slate-200 p-2.5" aria-label="Actualizar"><RefreshCw className={loading ? 'animate-spin' : ''} size={18} /></button><a href={`${API_BASE}/reports/executive.pdf`} className="hidden items-center gap-2 rounded-xl bg-[#071526] px-4 py-2.5 text-sm font-semibold text-white sm:flex"><Download size={17} />Informe PDF</a></div></header>
       <div className="mx-auto max-w-[1500px] p-5 md:p-8">{view === 'dashboard' && <DashboardView dashboard={dashboard} risks={risks} recommendations={recommendations} onNavigate={setView} />}{view === 'assets' && <AssetsView assets={filteredAssets} search={search} onSearch={setSearch} onAdd={() => setAssetModal(true)} />}{view === 'risks' && <RisksView risks={filteredRisks} search={search} onSearch={setSearch} onAdd={() => setRiskModal(true)} />}{view === 'recommendations' && <RecommendationsView recommendations={recommendations} />}</div>
     </main>{assetModal && <AssetModal onClose={() => setAssetModal(false)} onSubmit={createAsset} />}{riskModal && <RiskModal assets={assets} onClose={() => setRiskModal(false)} onSubmit={createRisk} />}
   </div>;
+}
+
+function LoginView({ onLogin }: { onLogin: (email: string, password: string) => Promise<void> }) {
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError('');
+    const data = new FormData(event.currentTarget);
+    try {
+      await onLogin(String(data.get('email')), String(data.get('password')));
+    } catch {
+      setError('No fue posible iniciar sesión. Verifique sus credenciales.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+  return <main className="grid min-h-screen bg-[#071526] p-5 lg:grid-cols-2 lg:p-8">
+    <section className="hidden flex-col justify-between rounded-3xl bg-gradient-to-br from-cyan-400 to-cyan-600 p-12 text-[#071526] lg:flex">
+      <div className="flex items-center gap-3 text-xl font-bold"><span className="grid h-12 w-12 place-items-center rounded-xl bg-[#071526] text-cyan-300"><ShieldCheck /></span>CiberGuate IA</div>
+      <div><p className="text-sm font-bold uppercase tracking-[0.2em]">Gestión preventiva</p><h1 className="mt-4 max-w-xl text-5xl font-bold leading-tight">Proteja los activos que sostienen su institución.</h1><p className="mt-5 max-w-lg text-base leading-7 text-slate-800">Identifique, evalúe y priorice riesgos tecnológicos con una visión ejecutiva alineada con NIST CSF 2.0.</p></div>
+      <p className="text-sm font-semibold">Acceso seguro · Sesiones de 8 horas</p>
+    </section>
+    <section className="grid place-items-center px-2 py-10 sm:px-8"><div className="w-full max-w-md rounded-3xl bg-white p-7 shadow-2xl sm:p-10">
+      <span className="grid h-12 w-12 place-items-center rounded-xl bg-cyan-50 text-cyan-700"><LockKeyhole /></span>
+      <p className="mt-7 text-xs font-bold uppercase tracking-[0.18em] text-cyan-700">Portal institucional</p>
+      <h2 className="mt-2 text-3xl font-bold text-slate-950">Iniciar sesión</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-500">Ingrese con las credenciales administradas de su ambiente.</p>
+      <form onSubmit={submit} className="mt-8 space-y-5">
+        <label className="block text-sm font-semibold text-slate-700">Correo electrónico<input name="email" type="email" autoComplete="username" required className={fieldClass} placeholder="administrador@ciberguate.local" /></label>
+        <label className="block text-sm font-semibold text-slate-700">Contraseña<input name="password" type="password" autoComplete="current-password" required minLength={12} className={fieldClass} /></label>
+        {error && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm font-medium text-red-700 ring-1 ring-red-200">{error}</p>}
+        <button disabled={submitting} className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#071526] px-5 py-3 text-sm font-bold text-white disabled:opacity-60">{submitting ? 'Validando…' : 'Ingresar a CiberGuate'}<ChevronRight size={18} /></button>
+      </form>
+    </div></section>
+  </main>;
 }
 
 function DashboardView({ dashboard, risks, recommendations, onNavigate }: { dashboard: Dashboard; risks: Risk[]; recommendations: Recommendation[]; onNavigate: (view: View) => void }) {
