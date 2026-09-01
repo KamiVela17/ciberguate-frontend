@@ -19,6 +19,13 @@ const nav = [
 ] as const;
 
 export default function CiberGuateApp() {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    // BrowserRouter necesita history/window y se monta únicamente en el cliente.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+  if (!mounted) return <main className="flex min-h-screen items-center justify-center bg-[#071526] text-white"><RefreshCw className="animate-spin text-cyan-300" /></main>;
   return <BrowserRouter><Routes><Route path="/login" element={<Login />} /><Route path="/oauth/callback" element={<OauthCallback />} /><Route path="/*" element={<ProtectedApp />} /></Routes></BrowserRouter>;
 }
 
