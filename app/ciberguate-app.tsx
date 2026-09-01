@@ -2,7 +2,7 @@
 
 import { FormEvent, ReactNode, useCallback, useEffect, useState } from 'react';
 import { BrowserRouter, NavLink, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
-import { Activity, AlertTriangle, BarChart3, BellRing, Boxes, CheckCircle2, ClipboardCheck, Download, FileArchive, Gauge, LockKeyhole, LogOut, Menu, Radar, RefreshCw, ScanSearch, ShieldCheck, Siren, X } from 'lucide-react';
+import { Activity, AlertTriangle, BarChart3, BellRing, Boxes, CheckCircle2, ClipboardCheck, Crown, Download, FileArchive, Gauge, LockKeyhole, LogOut, Menu, Radar, RefreshCw, ScanSearch, ShieldCheck, Siren, X } from 'lucide-react';
 
 import { api, downloadProtected, downloadReport, getToken, Session, setToken } from './api';
 
@@ -15,7 +15,7 @@ type Compliance = { overall_score: number; frameworks: Array<{ framework: string
 const nav = [
   ['/dashboard', 'Centro ejecutivo', Gauge], ['/assets', 'Activos', Boxes], ['/risks', 'Riesgos', AlertTriangle], ['/diagnostics', 'Diagnóstico', ScanSearch],
   ['/monitoring', 'Monitoreo', Activity], ['/alerts', 'Alertas', BellRing], ['/compliance', 'Cumplimiento', ClipboardCheck], ['/documents', 'Documentos', FileArchive],
-  ['/soc', 'SOC / SIEM', Radar], ['/incidents', 'Incidentes', Siren], ['/reports', 'Informes', BarChart3], ['/security', 'Seguridad', LockKeyhole],
+  ['/soc', 'SOC / SIEM', Radar], ['/incidents', 'Incidentes', Siren], ['/reports', 'Informes', BarChart3], ['/plans', 'Planes', Crown], ['/security', 'Seguridad', LockKeyhole],
 ] as const;
 
 export default function CiberGuateApp() {
@@ -35,7 +35,7 @@ function ProtectedApp() {
     <Route path="/dashboard" element={<DashboardPage />} /><Route path="/assets" element={<AssetsPage />} /><Route path="/risks" element={<RisksPage />} />
     <Route path="/diagnostics" element={<DiagnosticsPage />} /><Route path="/monitoring" element={<MonitoringPage />} /><Route path="/alerts" element={<AlertsPage />} />
     <Route path="/compliance" element={<CompliancePage />} /><Route path="/documents" element={<DocumentsPage />} /><Route path="/soc" element={<SocPage />} />
-    <Route path="/incidents" element={<IncidentsPage />} /><Route path="/reports" element={<ReportsPage />} /><Route path="/security" element={<SecurityPage />} />
+    <Route path="/incidents" element={<IncidentsPage />} /><Route path="/reports" element={<ReportsPage />} /><Route path="/plans" element={<PlansPage />} /><Route path="/security" element={<SecurityPage />} />
     <Route path="*" element={<Navigate to="/dashboard" replace />} />
   </Routes></Shell>;
 }
@@ -116,7 +116,7 @@ function AlertsPage() {
 
 function CompliancePage() {
   const state = useData<Compliance>('/compliance', { overall_score: 0, frameworks: [], controls: [] });
-  return <Page title="Cumplimiento normativo" intro="Evaluación con evidencia para ISO 27001, NIST CSF 2.0, CIS Controls v8, OWASP Top 10 y MITRE ATT&CK."><section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{state.data.frameworks.map((item) => <Metric key={item.framework} label={item.framework} value={`${item.score}%`} detail={`${item.implemented}/${item.total} implementados`} />)}</section><DataTable rows={state.data.controls} columns={['framework','code','title','status','score','evidence']} labels={['Marco','Control','Requisito','Estado','Puntaje','Evidencia']} actions={(row) => <select value={String(row.status)} onChange={async (event) => { await api(`/compliance/${row.id}`, { method: 'PUT', body: JSON.stringify({ status: event.target.value }) }); await state.load(); }} className="rounded-lg border px-2 py-1 text-xs"><option>Pendiente</option><option>Parcial</option><option>Implementado</option><option>No aplica</option></select>} /></Page>;
+  return <Page title="Cumplimiento normativo" intro="Evaluación con evidencia para ISO 27001, NIST CSF 2.0, CIS Controls v8, OWASP Top 10 y MITRE ATT&CK."><div><button className="rounded-xl bg-cyan-700 px-4 py-2 text-sm font-bold text-white" onClick={async () => { await api('/compliance/automatic-assessment', { method: 'POST' }); await state.load(); }}>Evaluar automáticamente</button></div><section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">{state.data.frameworks.map((item) => <Metric key={item.framework} label={item.framework} value={`${item.score}%`} detail={`${item.implemented}/${item.total} implementados`} />)}</section><DataTable rows={state.data.controls} columns={['framework','code','title','status','score','evidence']} labels={['Marco','Control','Requisito','Estado','Puntaje','Evidencia']} actions={(row) => <select value={String(row.status)} onChange={async (event) => { await api(`/compliance/${row.id}`, { method: 'PUT', body: JSON.stringify({ status: event.target.value }) }); await state.load(); }} className="rounded-lg border px-2 py-1 text-xs"><option>Pendiente</option><option>Parcial</option><option>Implementado</option><option>No aplica</option></select>} /></Page>;
 }
 
 function DocumentsPage() {
@@ -139,6 +139,15 @@ function IncidentsPage() {
 
 function ReportsPage() { const [error, setError] = useState(''); const reports = useData<Row[]>('/reports/monthly', []); return <Page title="Reportes para auditoría" intro="Genere un informe actualizado y consulte los cortes mensuales producidos automáticamente."><div className="rounded-3xl bg-[#071526] p-8 text-white"><Download size={34} className="text-cyan-300" /><h3 className="mt-5 text-2xl font-black">Informe ejecutivo PDF</h3><p className="mt-2 max-w-2xl text-slate-300">La descarga autenticada incorpora la información vigente de PostgreSQL, priorización NIST y plan de acción.</p><button onClick={() => void downloadReport().catch((cause) => setError(cause.message))} className="mt-6 rounded-xl bg-cyan-400 px-5 py-3 font-bold text-[#071526]">Generar y descargar</button>{error && <ErrorText text={error} />}</div><Panel title="Archivo mensual automático"><DataTable rows={reports.data} columns={['period','report_type','size_bytes','generated_at']} labels={['Periodo','Tipo','Bytes','Generado']} actions={(row) => <button className="text-sm font-bold text-cyan-700" onClick={() => void downloadProtected(`/reports/monthly/${row.id}.pdf`, `informe-${row.period}.pdf`)}>Descargar</button>} /></Panel></Page>; }
 
+function PlansPage() {
+  const plans = [
+    { name: 'Básico', audience: 'Visibilidad inicial', features: ['Escaneo de vulnerabilidades', 'Dashboard ejecutivo', 'Reportes mensuales automáticos'] },
+    { name: 'Profesional', audience: 'Gestión y cumplimiento', features: ['Todo el plan Básico', 'Evaluación de riesgos', 'ISO 27001 y NIST CSF 2.0', 'Gestión de activos', 'Monitoreo continuo y alertas'] },
+    { name: 'Enterprise', audience: 'Operación avanzada', features: ['Todo el plan Profesional', 'IA predictiva', 'SOC virtual', 'SIEM integrado', 'Gestión de incidentes', 'Respuesta automatizada'] },
+  ];
+  return <Page title="Planes de servicio" intro="La plataforma demuestra los tres niveles de la propuesta de valor; este entorno académico habilita el alcance Enterprise completo."><section className="grid gap-5 lg:grid-cols-3">{plans.map((plan, index) => <article key={plan.name} className={`rounded-3xl border p-6 shadow-sm ${index === 2 ? 'border-cyan-500 bg-[#071526] text-white' : 'border-slate-200 bg-white'}`}><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-600">{plan.audience}</p><h3 className="mt-3 text-2xl font-black">Plan {plan.name}</h3><ul className="mt-6 space-y-3">{plan.features.map((feature) => <li key={feature} className="flex gap-3 text-sm"><CheckCircle2 size={17} className="shrink-0 text-cyan-500" />{feature}</li>)}</ul>{index === 2 && <span className="mt-7 inline-block rounded-full bg-cyan-400 px-3 py-1 text-xs font-black text-[#071526]">Activo en este MVP</span>}</article>)}</section></Page>;
+}
+
 function SecurityPage() {
   const [setup, setSetup] = useState<{ secret: string; otpauth_uri: string } | null>(null); const [message, setMessage] = useState('');
   async function enable(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const code = new FormData(event.currentTarget).get('code'); await api('/auth/mfa/enable', { method: 'POST', body: JSON.stringify({ code }) }); setMessage('MFA activado correctamente. Se solicitará en el siguiente acceso.'); }
@@ -148,7 +157,7 @@ function SecurityPage() {
 function CrudPage({ title, intro, path, columns, labels, fields, defaults = {}, extra }: { title: string; intro: string; path: string; columns: string[]; labels: string[]; fields: string[][]; defaults?: Record<string, unknown>; extra?: ReactNode }) {
   const state = useData<Row[]>(path, []); const [error, setError] = useState('');
   async function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); const values = { ...defaults, ...Object.fromEntries(new FormData(event.currentTarget)) }; for (const key of ['criticality','likelihood','impact','asset_id']) if (values[key] !== undefined) values[key] = Number(values[key]); try { await api(path, { method: 'POST', body: JSON.stringify(values) }); event.currentTarget.reset(); await state.load(); } catch (cause) { setError(cause instanceof Error ? cause.message : 'Error'); } }
-  return <Page title={title} intro={intro}><FormCard onSubmit={submit} submit="Registrar">{fields.map(([name,label]) => <Field key={name} name={name} label={label} type={/criticidad|probabilidad|impacto/i.test(label) ? 'number' : 'text'} />)}{extra}{error && <ErrorText text={error} />}</FormCard><DataTable rows={state.data} columns={columns} labels={labels} /></Page>;
+  return <Page title={title} intro={intro}><FormCard onSubmit={submit} submit="Registrar">{fields.map(([name,label]) => <Field key={name} name={name} label={label} type={/criticidad|probabilidad|impacto/i.test(label) ? 'number' : 'text'} />)}{extra}{error && <ErrorText text={error} />}</FormCard><DataTable rows={state.data} columns={columns} labels={labels} actions={(row) => <button className="text-sm font-bold text-red-600" onClick={async () => { if (window.confirm('¿Eliminar este registro?')) { await api(`${path}/${row.id}`, { method: 'DELETE' }); await state.load(); } }}>Eliminar</button>} /></Page>;
 }
 
 function Page({ title, intro, children }: { title: string; intro: string; children: ReactNode }) { return <div className="space-y-6"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-cyan-700">CiberGuate IA</p><h2 className="mt-2 text-3xl font-black">{title}</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{intro}</p></div>{children}</div>; }
