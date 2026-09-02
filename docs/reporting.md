@@ -13,6 +13,21 @@ flowchart LR
     PDF --> FILE[Reporte descargable]
 ```
 
+## Centro de reportería
+
+La ruta `/reports` centraliza cinco áreas navegables: resumen ejecutivo, métricas, evidencia, archivo mensual y auditoría. El dashboard general enlaza directamente a este centro.
+
+```mermaid
+flowchart LR
+    SUMMARY[Resumen y KPIs] --> METRICS[Gráficas]
+    METRICS --> EVIDENCE[Riesgos, diagnósticos, alertas e incidentes]
+    EVIDENCE --> ARCHIVE[Archivo mensual]
+    ARCHIVE --> AUDIT[Bitácora]
+    SUMMARY --> PDF[Informe ejecutivo PDF]
+```
+
+Las gráficas usan contenedores responsivos con altura estable. Las comparaciones con etiquetas extensas se muestran horizontalmente para evitar cortes y solapamientos.
+
 Chart.js se utiliza para distribución y tendencia; React PDF produce documentos desde los mismos resultados visibles. Las tablas de detalle permiten explicar los totales y puntajes.
 
 ## Reglas de trazabilidad
@@ -34,6 +49,8 @@ Chart.js se utiliza para distribución y tendencia; React PDF produce documentos
 | Monitoreo | Objetivo, estado, latencia, última verificación e historial |
 | Incidentes | Severidad, estado, línea temporal y acciones automatizadas |
 | PDF | Título, período, resumen, detalle y fecha de generación |
+
+El PDF ejecutivo del servidor incluye KPIs, gráficas vectoriales, detalle de riesgos, plan de tratamiento, metodología y numeración de páginas. Su composición se valida renderizando cada página antes de publicar.
 
 ## Validación visual
 

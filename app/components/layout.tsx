@@ -9,7 +9,7 @@ import { clearNotice, closeSidebar, logout, toggleSidebar, useAppDispatch, useAp
 export const navigation = [
   ['/dashboard', 'Centro ejecutivo', Gauge], ['/assets', 'Activos', Boxes], ['/risks', 'Riesgos', AlertTriangle], ['/diagnostics', 'Diagnóstico', ScanSearch],
   ['/monitoring', 'Monitoreo', Activity], ['/alerts', 'Alertas', BellRing], ['/compliance', 'Cumplimiento', ClipboardCheck], ['/documents', 'Documentos', FileArchive],
-  ['/soc', 'SOC / SIEM', Radar], ['/incidents', 'Incidentes', Siren], ['/reports', 'Informes', BarChart3], ['/plans', 'Planes', Crown], ['/security', 'Seguridad', LockKeyhole],
+  ['/soc', 'SOC / SIEM', Radar], ['/incidents', 'Incidentes', Siren], ['/reports', 'Centro de reportería', BarChart3], ['/plans', 'Planes', Crown], ['/security', 'Seguridad', LockKeyhole],
 ] as const;
 
 export function Shell({ children }: { children: ReactNode }) {

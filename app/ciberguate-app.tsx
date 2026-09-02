@@ -8,8 +8,9 @@ import { Shell } from './components/layout';
 import { LoginPage, OauthCallbackPage } from './pages/auth';
 import { DashboardPage } from './pages/dashboard';
 import { DiagnosticsPage } from './pages/diagnostics';
-import { CompliancePage, DocumentsPage, IncidentsPage, PlansPage, ReportsPage, SecurityPage, SocPage } from './pages/governance';
+import { CompliancePage, DocumentsPage, IncidentsPage, PlansPage, SecurityPage, SocPage } from './pages/governance';
 import { AlertsPage, AssetsPage, MonitoringPage, RisksPage } from './pages/operations';
+import { ReportsPage } from './pages/reports';
 import { AppStoreProvider, useAppSelector } from './store';
 
 export default function CiberGuateApp() {
