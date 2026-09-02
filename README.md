@@ -1,22 +1,38 @@
-# CiberGuate Frontend
+# CiberGuate IA — Frontend
 
-El MVP usa `react-router-dom` para las rutas protegidas `/dashboard`, `/assets`,
-`/risks`, `/diagnostics`, `/monitoring`, `/alerts`, `/compliance`, `/documents`,
-`/soc`, `/incidents`, `/reports` y `/security`. Incluye flujos para diagnóstico,
-monitoreo, cumplimiento, SOC/SIEM, incidentes, MFA y reportes autenticados.
+Aplicación web de CiberGuate IA. Implementa autenticación, navegación protegida, activos, diagnósticos, riesgos, monitoreo, cumplimiento, incidentes, reportes y seguridad.
 
-Panel React/Next.js para inventario de activos, evaluación de riesgos NIST,
-dashboard, recomendaciones y reportes. El pipeline ejecuta lint, TypeScript y
-build; en `main` publica una imagen ECR con etiqueta igual al SHA completo del
-commit y actualiza el overlay `dev` del repositorio GitOps.
+## Tecnologías
 
-La aplicación inicia en una pantalla de autenticación y conserva el token de
-acceso solamente durante la sesión del navegador.
+- React 19, TypeScript y React Router DOM.
+- Redux Toolkit y RTK Query para estado global y API.
+- Chart.js para tableros y React PDF para reportes.
+- Docker y Nginx para producción.
 
-```powershell
-npm install
+## Inicio rápido
+
+```bash
+npm ci
 npm run dev
 ```
 
-Variables del repositorio GitHub: `AWS_REGION`, `ECR_REPOSITORY` y
-`GITOPS_REPOSITORY`. Secretos: `AWS_ROLE_ARN` y `GITOPS_DEPLOY_KEY`.
+Antes de publicar:
+
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```
+
+## Documentación
+
+El índice está en [docs/README.md](docs/README.md):
+
+- [Arquitectura](docs/architecture.md)
+- [Rutas y casos de uso](docs/routes-and-use-cases.md)
+- [Estado global](docs/state-management.md)
+- [Dashboards y reportes](docs/reporting.md)
+- [Desarrollo y CI/CD](docs/development.md)
+- [Seguridad](docs/security.md)
+
+La rama `main` publica en Amazon ECR una imagen identificada con el SHA completo del commit y actualiza GitOps. Entorno publicado: <https://100.49.206.62.nip.io>.
